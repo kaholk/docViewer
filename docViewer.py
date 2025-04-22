@@ -95,12 +95,12 @@ class FileWidget(QWidget):
         self.workInstructionButton.clicked.connect(lambda: print("Work Instruction"))
         self.buttonsGridLayout.addWidget(self.workInstructionButton, 0, 4)
 
-        # PIJ button
-        self.pijButton = QPushButton("PIJ")
-        self.pijButton.setFixedSize(50, 50)
-        self.pijButton.setToolTip("PIJ")
-        self.pijButton.clicked.connect(lambda: print("PIJ"))
-        self.buttonsGridLayout.addWidget(self.pijButton, 1, 4)
+        # inspection instruction button
+        self.inspectionInstructionButton = QPushButton("PIJ")
+        self.inspectionInstructionButton.setFixedSize(50, 50)
+        self.inspectionInstructionButton.setToolTip("PIJ")
+        self.inspectionInstructionButton.clicked.connect(lambda: print("PIJ"))
+        self.buttonsGridLayout.addWidget(self.inspectionInstructionButton, 1, 4)
 
         # packing specification list button
         self.packingSpecificationButton = QPushButton("SP")
