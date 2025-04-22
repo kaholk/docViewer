@@ -8,3 +8,7 @@ build/
 # Wyklucz pliki tymczasowe edytorów
 *.pyc
 __pycache__/
+
+
+#wyklucz pliki pdf
+*.pdf

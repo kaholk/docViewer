@@ -180,8 +180,8 @@ class MainWindow(QMainWindow):
         self.layout.addWidget(self.fullScreenButton)
 
         # Wczytanie plików do widoków
-        self.fileViews[0].loadFile("faktura.pdf")
-        self.fileViews[1].loadFile("IMG-20250224-WA0014.jpg")
+        self.fileViews[0].loadFile("assets/wniosek.pdf")
+        self.fileViews[1].loadFile("assets/wniosek.pdf")
 
         # Obsługa klawisza ESC do wyjścia z trybu pełnoekranowego
         self.keyPressEvent = self.handleKeyPress
