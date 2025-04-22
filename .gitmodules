@@ -1,0 +1,3 @@
+[submodule "qpageview"]
+	path = qpageview
+	url = https://github.com/kaholk/qpageview
