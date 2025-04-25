@@ -1,6 +1,7 @@
 import sys
 from PyQt6.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QGridLayout,  QPushButton, QHBoxLayout, QSplitter
 from PyQt6.QtCore import Qt
+from PyQt6.QtWidgets import QInputDialog
 import qpageview.qpageview as qpageview
 
 
@@ -156,7 +157,7 @@ class MainWindow(QMainWindow):
         # Tworzenie głównego widżetu i układu
         self.mainWidget = QWidget()
         self.setCentralWidget(self.mainWidget)
-        self.layout = QVBoxLayout(self.mainWidget)
+        self.layout:QVBoxLayout = QVBoxLayout(self.mainWidget)
 
         # Tworzenie widoków plików
         self.fileViews = [FileWidget(self.mainWidget), FileWidget(self.mainWidget)]
@@ -173,22 +174,36 @@ class MainWindow(QMainWindow):
 
         # Dodanie podzielonego widoku do głównego układu
         self.layout.addWidget(self.splitterWidget)
-
+        
+        #layout for download order and fullscreen button
+        self.buttonsLayout = QHBoxLayout()
+        self.buttonsLayout.setAlignment(Qt.AlignmentFlag.AlignLeft)
+        self.layout.addLayout(self.buttonsLayout)
+        
+        # download order buttin
         self.downloadOrderButton = QPushButton("Pobierz zlecenie")
-        self.downloadOrderButton.setStyleSheet("padding: 10px;")
-        self.layout.addWidget(self.downloadOrderButton)
+        self.downloadOrderButton.setStyleSheet("padding: 10px;"),
+        self.downloadOrderButton.clicked.connect(self.showInputDialog)
+        self.buttonsLayout.addWidget(self.downloadOrderButton, 1)
 
+        #fullscreen button
         self.fullScreenButton = QPushButton("Pełny ekran")
         self.fullScreenButton.setStyleSheet("padding: 10px;")
+        self.fullScreenButton.setFixedWidth(100)
         self.fullScreenButton.clicked.connect(self.changeFullscreen)
-        self.layout.addWidget(self.fullScreenButton)
+        self.buttonsLayout.addWidget(self.fullScreenButton)
 
         # Wczytanie plików do widoków
         self.fileViews[0].loadFile("assets/wniosek.pdf")
         self.fileViews[1].loadFile("assets/wniosek.pdf")
-
+        
         # Obsługa klawisza ESC do wyjścia z trybu pełnoekranowego
         self.keyPressEvent = self.handleKeyPress
+
+    def showInputDialog(self):
+        text, ok = QInputDialog.getText(self, "Wprowadź tekst", "Podaj dane:")
+        if ok and text:
+            print(f"Wprowadzono: {text}")
 
     def changeFullscreen(self):
         if self.isFullScreen():
