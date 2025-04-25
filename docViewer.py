@@ -18,99 +18,103 @@ class FileWidget(QWidget):
         self.fileView.kineticScrollingEnabled = False
         self.layout.addWidget(self.fileView)
 
-
         # Tworzenie układu siatki z 2 wierszami
-        self.buttonsGridLayout = QGridLayout()
-        self.buttonsGridLayout.setContentsMargins(0, 0, 0, 0)
-        # self.buttonsGridLayout.setSpacing(0)
-        self.buttonsGridLayout.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop)
-        # self.buttonsGridLayout.setSpacing(5)
+        self.buttonsLayout = QHBoxLayout()
+        self.buttonsLayout.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop)
 
-        # Tworzenie przycisków powiększania i pomniejszania
-        # self.buttonsLayout = QVBoxLayout()
-        # self.buttonsLayout.setAlignment(Qt.AlignmentFlag.AlignLeft)
-
+        self.buttonsLayoutGroup1 = QVBoxLayout()
+        self.buttonsLayoutGroup2 = QVBoxLayout()
+        self.buttonsLayoutGroup3 = QVBoxLayout()
+        self.buttonsLayoutGroup4 = QVBoxLayout()
+        self.buttonsLayoutGroup5 = QVBoxLayout()
+        self.buttonsLayoutGroup6 = QVBoxLayout()
+        
+        self.buttonsLayout.addLayout(self.buttonsLayoutGroup1)
+        self.buttonsLayout.addLayout(self.buttonsLayoutGroup2)
+        self.buttonsLayout.addLayout(self.buttonsLayoutGroup3)
+        self.buttonsLayout.addLayout(self.buttonsLayoutGroup4)
+        self.buttonsLayout.addLayout(self.buttonsLayoutGroup5)
+        self.buttonsLayout.addLayout(self.buttonsLayoutGroup6)
+        
         #page up button
         self.pageUpButton = QPushButton("↑")
         self.pageUpButton.setFixedSize(50, 50)
         self.pageUpButton.setToolTip("Poprzednai strona")
         self.pageUpButton.clicked.connect(self.pageUp)
-        self.buttonsGridLayout.addWidget(self.pageUpButton, 0, 0)
+        self.buttonsLayoutGroup1.addWidget(self.pageUpButton)
 
         #page down button
         self.pageDownButton = QPushButton("↓")
         self.pageDownButton.setFixedSize(50, 50)
         self.pageDownButton.setToolTip("Następna strona")
         self.pageDownButton.clicked.connect(self.pageDown)
-        self.buttonsGridLayout.addWidget(self.pageDownButton, 1, 0)
+        self.buttonsLayoutGroup1.addWidget(self.pageDownButton)
 
         # rotate right button
         self.rotateRightButton = QPushButton("↻")
         self.rotateRightButton.setFixedSize(50, 50)
         self.rotateRightButton.setToolTip("Obróć w prawo")
         self.rotateRightButton.clicked.connect(self.rotateRight)
-        self.buttonsGridLayout.addWidget(self.rotateRightButton, 0, 1)
-
+        self.buttonsLayoutGroup2.addWidget(self.rotateRightButton)
 
         # rotate left button
         self.rotateLeftButton = QPushButton("↺")
         self.rotateLeftButton.setFixedSize(50, 50)
         self.rotateLeftButton.setToolTip("Obróć w lewo")
         self.rotateLeftButton.clicked.connect(self.rotateLeft)
-        self.buttonsGridLayout.addWidget(self.rotateLeftButton, 1, 1)
+        self.buttonsLayoutGroup2.addWidget(self.rotateLeftButton)
         
-
         # zoom in button
         self.zoomInButton = QPushButton("+")
         self.zoomInButton.setFixedSize(50, 50)
         self.zoomInButton.setToolTip("Powiększ")
         self.zoomInButton.clicked.connect(self.zoomIn)
-        self.buttonsGridLayout.addWidget(self.zoomInButton, 0, 2)
+        self.buttonsLayoutGroup3.addWidget(self.zoomInButton)
 
         # zoom out button
         self.zoomOutButton = QPushButton("-")
         self.zoomOutButton.setFixedSize(50, 50)
         self.zoomOutButton.setToolTip("Pomniejsz")
         self.zoomOutButton.clicked.connect(self.zoomOut)
-        self.buttonsGridLayout.addWidget(self.zoomOutButton, 1, 2)
+        self.buttonsLayoutGroup3.addWidget(self.zoomOutButton)
 
         # cutting list button
         self.cuttingListButton = QPushButton("LC")
         self.cuttingListButton.setFixedSize(50, 50)
         self.cuttingListButton.setToolTip("Lista cięcia")
         self.cuttingListButton.clicked.connect(lambda: print("Cutting List"))
-        self.buttonsGridLayout.addWidget(self.cuttingListButton, 0, 3)
+        self.buttonsLayoutGroup4.addWidget(self.cuttingListButton)
 
         # drawing list button
         self.drawingListButton = QPushButton("RYS")
         self.drawingListButton.setFixedSize(50, 50)
         self.drawingListButton.setToolTip("Lista rysunków")
         self.drawingListButton.clicked.connect(lambda: print("Drawing List"))
-        self.buttonsGridLayout.addWidget(self.drawingListButton, 1, 3)
+        self.buttonsLayoutGroup4.addWidget(self.drawingListButton)
 
         # work instruction button
         self.workInstructionButton = QPushButton("IP")
         self.workInstructionButton.setFixedSize(50, 50)
         self.workInstructionButton.setToolTip("Instrukcja pracy")
         self.workInstructionButton.clicked.connect(lambda: print("Work Instruction"))
-        self.buttonsGridLayout.addWidget(self.workInstructionButton, 0, 4)
+        self.buttonsLayoutGroup5.addWidget(self.workInstructionButton)
 
         # inspection instruction button
         self.inspectionInstructionButton = QPushButton("PIJ")
         self.inspectionInstructionButton.setFixedSize(50, 50)
         self.inspectionInstructionButton.setToolTip("PIJ")
         self.inspectionInstructionButton.clicked.connect(lambda: print("PIJ"))
-        self.buttonsGridLayout.addWidget(self.inspectionInstructionButton, 1, 4)
+        self.buttonsLayoutGroup5.addWidget(self.inspectionInstructionButton)
 
         # packing specification list button
         self.packingSpecificationButton = QPushButton("SP")
         self.packingSpecificationButton.setFixedSize(50, 50)
         self.packingSpecificationButton.setToolTip("Specyfikacja pakowania")
         self.packingSpecificationButton.clicked.connect(lambda: print("Packing Specification"))
-        self.buttonsGridLayout.addWidget(self.packingSpecificationButton, 0, 5)
+        self.buttonsLayoutGroup6.addWidget(self.packingSpecificationButton)
 
         # Dodanie układu siatki do głównego układu
-        self.layout.addLayout(self.buttonsGridLayout)
+        self.layout.addLayout(self.buttonsLayout)
 
     def zoomIn(self):
         self.fileView.zoomIn()
