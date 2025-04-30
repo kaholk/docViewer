@@ -1,5 +1,5 @@
 import sys
-from PyQt6.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QGridLayout,  QPushButton, QHBoxLayout, QSplitter
+from PyQt6.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QStackedLayout, QGridLayout,  QPushButton, QHBoxLayout, QSplitter
 from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import QInputDialog
 import qpageview.qpageview as qpageview
@@ -155,30 +155,42 @@ class MainWindow(QMainWindow):
         self.setGeometry(100, 100, 800, 600)
 
         # Tworzenie głównego widżetu i układu
+        self.mainWidgetLayout:QVBoxLayout = QVBoxLayout()
         self.mainWidget = QWidget()
+        self.mainWidget.setLayout(self.mainWidgetLayout)
         self.setCentralWidget(self.mainWidget)
-        self.layout:QVBoxLayout = QVBoxLayout(self.mainWidget)
 
-        # Tworzenie widoków plików
-        self.fileViews = [FileWidget(self.mainWidget), FileWidget(self.mainWidget)]
-
+        self.z1 = QVBoxLayout()
+        self.z2 = QVBoxLayout()
+        
         # Tworzenie podzielonego widoku
-        self.splitterWidget = QSplitter(Qt.Orientation.Horizontal, self.mainWidget)
+        self.splitterWidget = QSplitter(Qt.Orientation.Horizontal)
         self.splitterWidget.setContentsMargins(0, 0, 0, 0)
         self.splitterWidget.setHandleWidth(10)
         self.splitterWidget.setChildrenCollapsible(False)
-
+        
+        # Tworzenie widoków plików
+        self.fileWidgets = [FileWidget(), FileWidget()]
+        
         # Dodanie widoków plików do podzielonego widoku
-        for fileView in self.fileViews:
+        for fileView in self.fileWidgets:
             self.splitterWidget.addWidget(fileView)
+            
+        self.z1.addWidget(self.splitterWidget)
 
         # Dodanie podzielonego widoku do głównego układu
-        self.layout.addWidget(self.splitterWidget)
+        # self.mainWidgetLayout.addWidget(self.splitterWidget)
+        
+        self.stackedLayout:QStackedLayout = QStackedLayout()
+        self.stackedLayout.addItem(self.z1)
+        # self.stackedLayout.addItem(self.z2)
+        # self.stackedLayout.addWidget(self.splitterWidget)
+        self.mainWidgetLayout.addLayout(self.stackedLayout)
         
         #layout for download order and fullscreen button
         self.buttonsLayout = QHBoxLayout()
         self.buttonsLayout.setAlignment(Qt.AlignmentFlag.AlignLeft)
-        self.layout.addLayout(self.buttonsLayout)
+        self.mainWidgetLayout.addLayout(self.buttonsLayout)
         
         # download order buttin
         self.downloadOrderButton = QPushButton("Pobierz zlecenie")
@@ -194,8 +206,8 @@ class MainWindow(QMainWindow):
         self.buttonsLayout.addWidget(self.fullScreenButton)
 
         # Wczytanie plików do widoków
-        self.fileViews[0].loadFile("assets/wniosek.pdf")
-        self.fileViews[1].loadFile("assets/wniosek.pdf")
+        self.fileWidgets[0].loadFile("assets/wniosek.pdf")
+        self.fileWidgets[1].loadFile("assets/wniosek.pdf")
         
         # Obsługa klawisza ESC do wyjścia z trybu pełnoekranowego
         self.keyPressEvent = self.handleKeyPress
