@@ -1,7 +1,8 @@
 import sys
-from PyQt6.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QStackedLayout, QGridLayout,  QPushButton, QHBoxLayout, QSplitter
+from PyQt6.QtWidgets import QApplication, QMainWindow, QWidget, QSpacerItem, QLayout, QVBoxLayout, QStackedLayout, QGridLayout,  QPushButton, QHBoxLayout, QSplitter, QSizePolicy
 from PyQt6.QtCore import Qt
-from PyQt6.QtWidgets import QInputDialog
+from PyQt6.QtGui import QPalette, QColor
+from PyQt6.QtWidgets import QInputDialog, QLineEdit
 import qpageview.qpageview as qpageview
 
 
@@ -155,73 +156,109 @@ class MainWindow(QMainWindow):
         self.setGeometry(100, 100, 800, 600)
 
         # Tworzenie głównego widżetu i układu
-        self.mainWidgetLayout:QVBoxLayout = QVBoxLayout()
         self.mainWidget = QWidget()
-        self.mainWidget.setLayout(self.mainWidgetLayout)
+        self.mainLayout = QVBoxLayout(self.mainWidget)
+        self.mainLayout.setContentsMargins(0, 0, 0, 0)
+        self.mainLayout.setSpacing(0)
         self.setCentralWidget(self.mainWidget)
 
-        self.z1 = QVBoxLayout()
-        self.z2 = QVBoxLayout()
+
+        self.z1 = QWidget(self.mainWidget)
+
+        self.z1Layout = QGridLayout(self.z1)
         
-        # Tworzenie podzielonego widoku
+        self.fileWidgets = [
+            FileWidget(), FileWidget()
+        ]
+
         self.splitterWidget = QSplitter(Qt.Orientation.Horizontal)
-        self.splitterWidget.setContentsMargins(0, 0, 0, 0)
-        self.splitterWidget.setHandleWidth(10)
-        self.splitterWidget.setChildrenCollapsible(False)
+        self.splitterWidget.setHandleWidth(5)
         
-        # Tworzenie widoków plików
-        self.fileWidgets = [FileWidget(), FileWidget()]
-        
-        # Dodanie widoków plików do podzielonego widoku
-        for fileView in self.fileWidgets:
-            self.splitterWidget.addWidget(fileView)
-            
-        self.z1.addWidget(self.splitterWidget)
+        for fileWidget in self.fileWidgets:
+            self.splitterWidget.addWidget(fileWidget)
 
-        # Dodanie podzielonego widoku do głównego układu
-        # self.mainWidgetLayout.addWidget(self.splitterWidget)
-        
-        self.stackedLayout:QStackedLayout = QStackedLayout()
-        self.stackedLayout.addItem(self.z1)
-        # self.stackedLayout.addItem(self.z2)
-        # self.stackedLayout.addWidget(self.splitterWidget)
-        self.mainWidgetLayout.addLayout(self.stackedLayout)
-        
-        #layout for download order and fullscreen button
-        self.buttonsLayout = QHBoxLayout()
-        self.buttonsLayout.setAlignment(Qt.AlignmentFlag.AlignLeft)
-        self.mainWidgetLayout.addLayout(self.buttonsLayout)
-        
-        # download order buttin
-        self.downloadOrderButton = QPushButton("Pobierz zlecenie")
-        self.downloadOrderButton.setStyleSheet("padding: 10px;"),
-        self.downloadOrderButton.clicked.connect(self.showInputDialog)
-        self.buttonsLayout.addWidget(self.downloadOrderButton, 1)
+        self.z1Layout.addWidget(self.splitterWidget, 0, 0, 1, 2)
 
-        #fullscreen button
-        self.fullScreenButton = QPushButton("Pełny ekran")
-        self.fullScreenButton.setStyleSheet("padding: 10px;")
-        self.fullScreenButton.setFixedWidth(100)
-        self.fullScreenButton.clicked.connect(self.changeFullscreen)
-        self.buttonsLayout.addWidget(self.fullScreenButton)
+        self.downloadButton = QPushButton("Pobierz Zlecenie")
+        self.downloadButton.setFixedHeight(50)
+        self.downloadButton.clicked.connect(self.changeInpputOrder)
+        self.z1Layout.addWidget(self.downloadButton, 1, 0, 1, 1)
 
-        # Wczytanie plików do widoków
-        self.fileWidgets[0].loadFile("assets/wniosek.pdf")
-        self.fileWidgets[1].loadFile("assets/wniosek.pdf")
+        self.fullscreenButton = QPushButton("Pełny ekran")
+        self.fullscreenButton.setFixedSize(100, 50)
+        self.fullscreenButton.clicked.connect(self.changeFullscreen)
+        self.z1Layout.addWidget(self.fullscreenButton, 1, 1, 1, 1)
+
+
+        self.z2 = QWidget(self.mainWidget)
+        self.z2Layout = QHBoxLayout(self.z2)
+        self.z2Layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
+
+        self.sp1acer = QSpacerItem(200, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
+        self.z2Widget = QWidget()
+        self.z2Widget.setMinimumWidth(400)
+        self.z2Widget.setMaximumWidth(800)
+        # Dodanie spacerów i z2Widget do układu
+        self.z2Layout.addItem(self.sp1acer)  # Spacer
+        self.z2Layout.addWidget(self.z2Widget)  # z2Widget
+        self.z2Layout.addItem(self.sp1acer)  # Spacer
+
+        # self.z2Widget.setFixedWidth(400)
         
-        # Obsługa klawisza ESC do wyjścia z trybu pełnoekranowego
+        palette = self.z2Widget.palette()
+        palette.setColor(QPalette.ColorRole.Window, self.palette().color(QPalette.ColorRole.Window).darker(100))
+        self.z2Widget.setAutoFillBackground(True)
+        self.z2Widget.setPalette(palette)
+        self.z2WidgetLayout = QVBoxLayout(self.z2Widget)
+    
+
+        self.orderInput = QLineEdit()
+        self.orderInput.setStyleSheet("padding: 10px 20px;")
+        self.orderInput.setFixedHeight(50)
+        self.orderInput.setPlaceholderText("Wprowadź numer zamówienia")
+        self.z2WidgetLayout.addWidget(self.orderInput)
+
+        self.z2WidgetButtonsLayout = QHBoxLayout()
+
+        self.btnCancel = QPushButton("Anuluj")
+        self.btnCancel.setStyleSheet("padding: 10px 20px;")
+        # self.btnCancel.setFixedSize(100, 50)
+        self.btnCancel.clicked.connect(self.changeInpputOrder)
+        self.z2WidgetButtonsLayout.addWidget(self.btnCancel)
+
+        self.btnProcced = QPushButton("Zatwierdź")
+        self.btnProcced.setStyleSheet("padding: 10px 20px;")
+        # self.btnProcced.setFixedSize(100, 50)
+        self.btnProcced.clicked.connect(lambda: print("Zatwierdź"))
+        self.z2WidgetButtonsLayout.addWidget(self.btnProcced)
+        self.z2WidgetLayout.addLayout(self.z2WidgetButtonsLayout)
+
+
+
         self.keyPressEvent = self.handleKeyPress
+        self.resizeEvent = self.handleResize
+        self.handleResize(None)
 
-    def showInputDialog(self):
-        text, ok = QInputDialog.getText(self, "Wprowadź tekst", "Podaj dane:")
-        if ok and text:
-            print(f"Wprowadzono: {text}")
+    def changeInpputOrder(self):
+        self.orderInput.clear()
+
+        if self.z2.isVisible():
+            self.z2.hide()
+        else:
+            self.z2.show()
+            self.orderInput.setFocus()
 
     def changeFullscreen(self):
         if self.isFullScreen():
             self.showNormal()
         else:
             self.showFullScreen()
+
+    def handleResize(self, event):
+        self.z1.setGeometry(self.rect())
+        self.z2.setGeometry(self.rect())
+
+        super().resizeEvent(event)
 
     def handleKeyPress(self, event):
         if event.key() == Qt.Key.Key_Escape:
