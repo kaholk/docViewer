@@ -13,12 +13,12 @@ import datetime
 from sqlalchemy import inspect
 import database.utils.constants as const
 
+from database.engine import SessionMaker
+from database.models import RecordLink
 
-
-
-
-url = "http://192.168.23.16/dokumentacja/Produkcje/DRA-19140-000 RevC(19_02_2025)_979121154113446624023224211743128184226140.pdf"
-print(url.split("/")[-1])
+import pandas as pd
+# url = "http://192.168.23.16/dokumentacja/Produkcje/DRA-19140-000 RevC(19_02_2025)_979121154113446624023224211743128184226140.pdf"
+# print(url.split("/")[-1])
 
 
 
@@ -78,15 +78,18 @@ print(url.split("/")[-1])
 
 
 
-# with Session() as session:
+with SessionMaker() as session:
     
 #     # not work
 #     # rows = session.scalars(select(RecordLink).where(RecordLink.recordId == "0xD8010000009151957617F8BB5C40BB36BA5FBDEAF12C0000")).all()
     
 #     #work
-#     rows = session.scalars(select(RecordLink).where(RecordLink.recordId == b'\x1b\x00\x00\x00\x02{\xffA\x00G\x00F\x009\x000\x000\x002\x004\x009\x005\x001\x00.\x000\x00.\x000\x003\x00R\x00D\x00\x00\x00\x00\x00')).all()
-#     rows = [row.to_dict() for row in rows]
-#     df = pd.DataFrame(rows)
+    rows = session.scalars(select(RecordLink)).all()
+    # rows = session.scalars(select(RecordLink).where(RecordLink.recordId == b'\x1b\x00\x00\x00\x02\xffV\x00D\x00L\x004\x000\x002\x002\x00 \x006\x009\x003\x00 \x000\x004\x009\x005\x00R\x002\x00\x00\x00\x00\x00')).all()
+    rows = [row.to_dict() for row in rows]
+    
+    df = pd.DataFrame(rows)
+    df.to_excel("test.xlsx")
 #     print(df)
     
 #     for row in rows:

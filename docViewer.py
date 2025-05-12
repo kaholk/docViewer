@@ -15,6 +15,7 @@ def createComponentBytes(component: str, tableId: int, fieldType: int) -> bytear
     component_bytes = bytearray()
     component_bytes += tableId.to_bytes(length=4, byteorder='little')
     component_bytes += fieldType.to_bytes(length=1, byteorder='little')
+    component_bytes += "{".encode(encoding='utf-8', errors='strict')
 
     for idx, char in enumerate(component):
         prefix = (255).to_bytes(length=1, byteorder='little') if idx == 0 else (0).to_bytes(length=1, byteorder='little')
@@ -326,60 +327,60 @@ class MainWindow(QMainWindow):
     def handleDownloadOrder(self):
         orderNumber = self.orderInput.text()
 
-        fileLinks = {
-            "LC": [
-                {
-                    "fileName": "file1.pdf",
-                    'description': "Rysunek etykietowy  REV1(RED2024-04-04)(17-02-2025)"
-                },
-                {
-                    "fileName": "file2.pdf",
-                    'description': "LC 2Rysunek etykietowy  REV1(RED2024-04-04)(17-02-2025)"
-                },
-                {
-                    "fileName": "file3.pdf",
-                    'description': "Rysunek etykietowy  REV1(RED2024-04-04)(17-02-2025)"
-                }
-            ],
-            "RYS": [],
-            "IP": [],
-            "PIJ": [],
-            "SP": [],
-            "OTHER": []
-        }
         # fileLinks = {
-        #     "LC": [],
+        #     "LC": [
+        #         {
+        #             "fileName": "file1.pdf",
+        #             'description': "Rysunek etykietowy  REV1(RED2024-04-04)(17-02-2025)"
+        #         },
+        #         {
+        #             "fileName": "file2.pdf",
+        #             'description': "LC 2Rysunek etykietowy  REV1(RED2024-04-04)(17-02-2025)"
+        #         },
+        #         {
+        #             "fileName": "file3.pdf",
+        #             'description': "Rysunek etykietowy  REV1(RED2024-04-04)(17-02-2025)"
+        #         }
+        #     ],
         #     "RYS": [],
         #     "IP": [],
         #     "PIJ": [],
         #     "SP": [],
         #     "OTHER": []
         # }
-        # with SessionMaker() as session:
-        #     order = session.scalar(select(ProductionOrderLine).where(ProductionOrderLine.prodOrderNo == orderNumber))
-        #     itemBytesId = createComponentBytes(component=order.itemNo, tableId=27, fieldType=2)
-        #     recordLinks = session.scalars(select(RecordLink).where(RecordLink.recordId == itemBytesId))
+        fileLinks = {
+            "LC": [],
+            "RYS": [],
+            "IP": [],
+            "PIJ": [],
+            "SP": [],
+            "OTHER": []
+        }
+        with SessionMaker() as session:
+            order = session.scalar(select(ProductionOrderLine).where(ProductionOrderLine.prodOrderNo == orderNumber))
+            itemBytesId = createComponentBytes(component=order.itemNo, tableId=27, fieldType=2)
+            recordLinks = session.scalars(select(RecordLink).where(RecordLink.recordId == itemBytesId)).all()
 
-        #     for recordLink in recordLinks:
-        #         fileName = recordLink.url1.split('/')[-1]
-        #         description = recordLink.description
-        #         fileLink = {
-        #             "fileName": fileName,
-        #             'description': description
-        #         }
+            for recordLink in recordLinks:
+                fileName = recordLink.url1.split('/')[-1]
+                description = recordLink.description
+                fileLink = {
+                    "fileName": fileName,
+                    'description': description
+                }
 
-        #         if description.startswith("LC"):
-        #             fileLinks["LC"].append(fileLink)
-        #         elif description.startswith("Rysunek"):
-        #             fileLinks["RYS"].append(fileLink)
-        #         elif description.startswith("IP"):
-        #             fileLinks["IP"].append(fileLink)
-        #         elif description.startswith("SP"):
-        #             fileLinks["SP"].append(fileLink)
-        #         elif description.startswith("QIP"):
-        #             fileLinks["PIJ"].append(fileLink)
-        #         else:
-        #             fileLinks["OTHER"].append(fileLink)
+                if description.startswith("LC"):
+                    fileLinks["LC"].append(fileLink)
+                elif description.startswith("Rysunek"):
+                    fileLinks["RYS"].append(fileLink)
+                elif description.startswith("IP"):
+                    fileLinks["IP"].append(fileLink)
+                elif description.startswith("SP"):
+                    fileLinks["SP"].append(fileLink)
+                elif description.startswith("QIP"):
+                    fileLinks["PIJ"].append(fileLink)
+                else:
+                    fileLinks["OTHER"].append(fileLink)
 
         for fileWidget in self.fileWidgets:
             fileWidget.fileLinks = fileLinks
