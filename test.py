@@ -1,97 +1,123 @@
+from PyQt6.QtWidgets import QApplication, QMainWindow, QSplitter, QWidget, QPushButton, QVBoxLayout, QHBoxLayout, QScrollArea, QSizePolicy
+from PyQt6.QtCore import Qt
+import sys
+
+class SectionWidget(QWidget):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.init_ui()
+
+    def init_ui(self):
+        section_layout = QVBoxLayout()
+
+        # Element zajmujący większość przestrzeni (dynamicznie rozszerzający się)
+        main_element = QWidget()
+        main_element.setStyleSheet("background-color: lightgray; min-height: 200px;")
+        main_element.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+
+        # ScrollArea z poziomo przewijanymi przyciskami (stała wysokość)
+        scroll_area = QScrollArea()
+        scroll_widget = QWidget()
+        scroll_layout = QHBoxLayout(scroll_widget)
+
+        for i in range(10):
+            button = QPushButton(f"Przycisk {i+1}")
+            scroll_layout.addWidget(button)
+
+        scroll_area.setWidget(scroll_widget)
+        scroll_area.setWidgetResizable(True)
+        scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOn)
+        scroll_area.setFixedHeight(50)
+
+        # Pozostałe przyciski - podzielone na dwie sekcje (na lewo i na prawo)
+        extra_buttons_container = QWidget()
+        extra_buttons_container.setContentsMargins(0, 0, 0, 0)
+        extra_buttons_layout = QHBoxLayout()
+        extra_buttons_layout.setAlignment(Qt.AlignmentFlag.AlignLeft)
+
+        nav_buttons = ["↑", "↓", "↻", "↺", "+", "-"]
+        action_buttons = ["LC", "RYS", "IP", "PIJ", "SP", "OTHER"]
+
+        nav_layout = QVBoxLayout()
+        action_layout = QVBoxLayout()
+
+        # Tworzenie przycisków nawigacyjnych (lewa strona, dwa wiersze)
+        for i in range(0, len(nav_buttons), 3):  # Po trzy w wierszu
+            row_layout = QHBoxLayout()
+            for label in nav_buttons[i:i+3]:
+                button = QPushButton(label)
+                button.setFixedSize(50, 50)
+                button.setToolTip(f"Nawigacja: {label}")
+                button.clicked.connect(lambda _, l=label: self.handle_nav_action(l))
+                row_layout.addWidget(button)
+            nav_layout.addLayout(row_layout)
+
+        # Tworzenie przycisków akcji (prawa strona, dwa wiersze)
+        for i in range(0, len(action_buttons), 3):  # Po trzy w wierszu
+            row_layout = QHBoxLayout()
+            for label in action_buttons[i:i+3]:
+                button = QPushButton(label)
+                button.setFixedSize(50, 50)
+                button.setToolTip(f"Akcja: {label}")
+                button.clicked.connect(lambda _, l=label: self.handle_action(l))
+                row_layout.addWidget(button)
+            action_layout.addLayout(row_layout)
+
+        extra_buttons_layout.addLayout(nav_layout)  # Przyciski nawigacji po lewej
+        extra_buttons_layout.addLayout(action_layout)  # Przyciski akcji po prawej
+        extra_buttons_container.setLayout(extra_buttons_layout)
+
+        section_layout.addWidget(main_element, 1)
+        section_layout.addWidget(scroll_area, 0)
+        section_layout.addWidget(extra_buttons_container, 0)
+
+        self.setLayout(section_layout)
+
+    def handle_nav_action(self, action):
+        print(f"Wykonano nawigację: {action}")
+
+    def handle_action(self, action):
+        print(f"Wykonano akcję: {action}")
+
+class MainWindow(QMainWindow):
+    def __init__(self):
+        super().__init__()
+
+        self.setWindowTitle("Schemat aplikacji PyQt6")
+        self.setGeometry(100, 100, 800, 600)
+
+        # Główny QSplitter (poziomy podział)
+        splitter = QSplitter(Qt.Orientation.Horizontal)
+        splitter.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+
+        # Dodanie sekcji do Splittera
+        splitter.addWidget(SectionWidget())
+        splitter.addWidget(SectionWidget())
+
+        # Przyciski "Pobierz zlecenie" i "Pełny ekran"
+        button_layout = QHBoxLayout()
+        get_order_button = QPushButton("Pobierz zlecenie")
+        full_screen_button = QPushButton("Pełny ekran")
 
 
+        button_layout.addWidget(get_order_button, 9)
+        button_layout.addWidget(full_screen_button, 1)
 
-from enum import Enum
-from enum import IntEnum
+        button_container = QWidget()
+        button_container.setContentsMargins(0, 0, 0, 0)
+        button_container.setLayout(button_layout)
 
+        main_layout = QVBoxLayout()
+        main_layout.setContentsMargins(0, 0, 0, 0)
+        main_layout.addWidget(splitter, 1)
+        main_layout.addWidget(button_container, 0)
 
+        main_widget = QWidget()
+        main_widget.setLayout(main_layout)
+        self.setCentralWidget(main_widget)
 
-from sqlalchemy import select
-
-import datetime
-
-from sqlalchemy import inspect
-import database.utils.constants as const
-
-from database.engine import SessionMaker
-from database.models import RecordLink
-
-import pandas as pd
-# url = "http://192.168.23.16/dokumentacja/Produkcje/DRA-19140-000 RevC(19_02_2025)_979121154113446624023224211743128184226140.pdf"
-# print(url.split("/")[-1])
-
-
-
-# hexString = '0x1B000000027BFF440055005400300031003000310030003100300030003900370000000000'
-            #    
-# hexString = '0xD801000000919E454A41CB0FCF4CBA118589FF1E37240000'
-# hexString =  ttttttttt
-# http://192.168.23.16/dokumentacja/DUT0102030027_cat.pdf
-
-# byteArray = bytearray.fromhex(hexString[2:])
-# print(byteArray)
-# print(byteArray[0:4])
-# print(byteArray[4:5]) #codeFileld
-# print(byteArray[6:7]) #alfanumeric
-# print(byteArray[6:32])
-
-# tableId = int.from_bytes(byteArray[0:4], byteorder='little')
-# codeFileld = int.from_bytes(byteArray[4:5], byteorder='little')
-# # codeFileld2 = int.from_bytes(byteArray[6:7], byteorder='little')
-
-
-# print(tableId)
-# print(codeFileld)
-# # print(codeFileld2)
-# print(byteArray[7:32].decode('utf-8'))
-
-
-
-# def create_component_bytes(component: str, table_id: int, field_type: int) -> bytearray:
-#     component_bytes = bytearray()
-#     component_bytes += table_id.to_bytes(length=4, byteorder='little')
-#     component_bytes += field_type.to_bytes(length=1, byteorder='little')
-
-#     for idx, char in enumerate(component):
-#         prefix = (255).to_bytes(length=1, byteorder='little') if idx == 0 else (0).to_bytes(length=1, byteorder='little')
-#         component_bytes += prefix + char.encode(encoding='utf-8', errors='strict')
-
-#     # Dodanie pięciu bajtów zerowych na końcu
-#     component_bytes += (0).to_bytes(length=5, byteorder='little')
-
-#     return component_bytes
-
-# # Przykładowe użycie
-# component = "DUT0101010097"
-# table_id = 27
-# field_type = 2
-
-# component_bytes = create_component_bytes(component, table_id, field_type)
-# print(component_bytes)
-
-# bbb = b'\x1b\x00\x00\x00\x02{\xffA\x00G\x00F\x009\x000\x000\x002\x004\x009\x005\x001\x00.\x000\x00.\x000\x003\x00R\x00D\x00\x00\x00\x00\x00'
-# print(int.from_bytes(bbb[0:4], byteorder='little'))
-# print(int.from_bytes(bbb[4:5], byteorder='little'))
-
-# encoded_bytes = b''.join([char.encode('utf-8') for char in text])
-# print(encoded_bytes.hex())
-
-
-
-with SessionMaker() as session:
-    
-#     # not work
-#     # rows = session.scalars(select(RecordLink).where(RecordLink.recordId == "0xD8010000009151957617F8BB5C40BB36BA5FBDEAF12C0000")).all()
-    
-#     #work
-    rows = session.scalars(select(RecordLink)).all()
-    # rows = session.scalars(select(RecordLink).where(RecordLink.recordId == b'\x1b\x00\x00\x00\x02\xffV\x00D\x00L\x004\x000\x002\x002\x00 \x006\x009\x003\x00 \x000\x004\x009\x005\x00R\x002\x00\x00\x00\x00\x00')).all()
-    rows = [row.to_dict() for row in rows]
-    
-    df = pd.DataFrame(rows)
-    df.to_excel("test.xlsx")
-#     print(df)
-    
-#     for row in rows:
-#         print(row.productionOrderStatus)
-    
+if __name__ == "__main__":
+    app = QApplication(sys.argv)
+    window = MainWindow()
+    window.show()
+    sys.exit(app.exec())
