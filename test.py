@@ -1,6 +1,7 @@
-from PyQt6.QtWidgets import QApplication, QMainWindow, QSplitter, QWidget, QPushButton, QLabel, QVBoxLayout, QHBoxLayout ,QScrollArea, QSizePolicy, QFrame, QTextEdit, QStyle, QStyleFactory, QProgressBar
+from PyQt6.QtWidgets import QApplication, QMainWindow, QSplitter, QWidget, QPushButton, QLabel, QVBoxLayout, QHBoxLayout, QScrollArea, QSizePolicy, QFrame, QTextEdit, QStyle, QStyleFactory, QProgressBar
 from PyQt6.QtCore import Qt, QTimer, QThread, pyqtSignal
-import sys
+
+from config_menager import appConfig
 
 class SectionWidget(QWidget):
     def __init__(self, parent=None):
@@ -241,9 +242,16 @@ class MainWindow(QMainWindow):
 
         #ustawienie parametrów okna
         self.setWindowTitle("Monitory")
+        self.setGeometry(appConfig.get('App', 'PositionX', int), appConfig.get('App', 'PositionY', int), appConfig.get('App', 'Width', int), appConfig.get('App', 'Height', int))
         self.setGeometry(100, 100, 800, 600)
 
-        # Główny QSplitter (poziomy podział)
+        #główny kontener z layoutem
+        main_widget = QWidget(self)
+        main_layout = QVBoxLayout(main_widget)
+        main_layout.setContentsMargins(0, 0, 0, 0)
+        self.setCentralWidget(main_widget)
+
+        # QSplitter podział na lewą i prawą sekcje
         splitter = QSplitter(Qt.Orientation.Horizontal)
         splitter.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         splitter.setContentsMargins(0, 0, 0, 0)
@@ -252,58 +260,59 @@ class MainWindow(QMainWindow):
         splitter.addWidget(SectionWidget())
         splitter.addWidget(SectionWidget())
 
-        # Przyciski "Pobierz zlecenie" i "Pełny ekran"
+        #kontener z layoutem dla przycisków "Pobierz zlecenie" i "Pełny ekran"
+        buttons_container = QWidget()
+        buttons_layout = QHBoxLayout(buttons_container)
+        buttons_layout.setContentsMargins(0, 0, 0, 0)
+
+        # Przyciski "Pobierz zlecenie"
         get_order_button = QPushButton("Pobierz zlecenie")
-        get_order_button.clicked.connect(self.tooglePopup)
         get_order_button.setMinimumHeight(40)
+        get_order_button.clicked.connect(self.tooglePopup)
+        buttons_layout.addWidget(get_order_button, 9)
         
+        #Przycisk "Pełny ekran"
         full_screen_button = QPushButton("Pełny ekran")
         full_screen_button.setMinimumHeight(40)
         full_screen_button.clicked.connect(self.toogleFullscreen)
+        buttons_layout.addWidget(full_screen_button, 1)
 
-        #layout dla przycisków z kontenerem
-        button_layout = QHBoxLayout()
-        button_layout.setContentsMargins(0, 0, 0, 0)
-        button_container = QWidget()
-        button_container.setLayout(button_layout)
-        
-        #dodanie przyciskow do layoutu
-        button_layout.addWidget(get_order_button, 9)
-        button_layout.addWidget(full_screen_button, 1)
-
-        #główny layout z kontenerem
-        main_layout = QVBoxLayout()
-        main_layout.setContentsMargins(0, 0, 0, 0)
-        main_widget = QWidget()
-        main_widget.setLayout(main_layout)
-        
-        #dodanie elementów do główego widoku
+        #dodanie elementów do główego układu
         main_layout.addWidget(splitter, 1)
-        main_layout.addWidget(button_container, 0)
+        main_layout.addWidget(buttons_container, 0)
         
-        self.setCentralWidget(main_widget)
-        
+        # popup do pobierania zlecenia
         self.popup = Popup(self)
         self.popup.show()
 
+        # uruchom w trybie pełnoekranowym jezeli wskazuje na to konfiguracja
+        if appConfig.get("App", "Fullscreen") == 'true':
+            self.showFullScreen()
+
+        # ukrycie prawego panelu jeeżeli wskazuje na to konfiguracja
+        if appConfig.get("App", "SplitterSections") == '1':
+            splitter.setSizes([1, 0])
+
+
+    # metoda zmieniajaca tryb aplikacji pomiędzy tyrbami: pełnoekranowym a normalnym
     def toogleFullscreen(self):
         if self.isFullScreen():
             self.showNormal()
         else: self.showFullScreen()
         
-
+    # metoda wyśetlająca i ukrywająca popup
     def tooglePopup(self):
         if self.popup.isVisible():
             self.popup.hide()
         else: self.popup.show()
 
+    # metoda aktualizujaca rozmiar popup przy prozszerzaniu okna mainwindow
     def resizeEvent(self, a0):
         self.popup.update_popup_size()
         
-
+# uruchomienie aplikacji
 if __name__ == "__main__":
-    #uruchomienie aplikacji
-    app = QApplication(sys.argv)
+    app = QApplication([])
     window = MainWindow()
     window.show()
-    sys.exit(app.exec())
+    app.exec()
