@@ -105,6 +105,22 @@ class SectionWidget(QWidget):
     def handle_action(self, action):
         print(f"Wykonano akcję: {action}")
 
+from PyQt6.QtWidgets import QFrame
+class Popup(QFrame):  # Zmieniamy `QWidget` na `QFrame`
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        # self.setWindowFlags(Qt.WindowType.FramelessWindowHint)
+        self.setFixedSize(parent.size())
+
+        # Stylizacja poprawiona dla `QFrame`
+        self.setStyleSheet("background-color: red; border: 5px solid blue;")
+
+        # Wymuszenie odświeżenia
+        # self.update()
+        # self.raise_()
+
+
+
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -150,6 +166,11 @@ class MainWindow(QMainWindow):
         main_layout.addWidget(button_container, 0)
         
         self.setCentralWidget(main_widget)
+        
+        
+        self.popup = Popup(self)
+        self.popup.show()
+        
 
 if __name__ == "__main__":
     #uruchomienie aplikacji

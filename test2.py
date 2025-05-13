@@ -170,7 +170,7 @@ class MainWindow(QMainWindow):
         bottom_layout.addWidget(self.fullscreen_button, 1)
         bottom_widget.setLayout(bottom_layout)
 
-        self.fetch_button.clicked.connect(self.show_popup)
+        # self.fetch_button.clicked.connect(self.show_popup)
 
         # Główny layout
         central_widget = QWidget()
@@ -183,7 +183,8 @@ class MainWindow(QMainWindow):
 
         # Popup jako nakładka w tym samym oknie
         self.popup = Popup(self)
-        self.popup.hide()
+        # self.popup.hide()
+        self.popup.show()
 
     # def resizeEvent(self, event):
     #     """Automatyczne dostosowanie `Popup` do nowego rozmiaru okna."""
@@ -192,10 +193,10 @@ class MainWindow(QMainWindow):
     #         self.popup.center_popup_container()  # Wyśrodkowanie
     #     super().resizeEvent(event)
 
-    def show_popup(self):
-        self.popup.setFixedSize(self.size())  # Dopasowanie Popup do rozmiaru okna
-        self.popup.center_popup_container()  # Dynamiczne wyśrodkowanie
-        self.popup.show()
+    # def show_popup(self):
+        # self.popup.setFixedSize(self.size())  # Dopasowanie Popup do rozmiaru okna
+        # self.popup.center_popup_container()  # Dynamiczne wyśrodkowanie
+        # self.popup.show()
 
 
 
