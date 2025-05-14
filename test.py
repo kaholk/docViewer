@@ -149,12 +149,14 @@ class SectionWidget(QWidget):
                 item.widget().deleteLater()
         
         for documentationFile in self.documentationFilenames[action]:
+            print(documentationFile)
             button = QPushButton(f"{documentationFile['description']}")
             button.setStyleSheet("padding: 5px 10px")
-            button.clicked.connect(lambda: self.loadFile(f"tempDocumentation/{documentationFile['fileName']}"))
+            button.clicked.connect(lambda _, fileName=documentationFile['fileName']: self.loadFile(f"tempDocumentation/{fileName}"))
             self.scroll_layout.addWidget(button)
     
     def loadFile(self, filePath: str):
+        print(filePath)
         # Wczytanie pliku PDF lub obrazu
         try:
             if filePath.endswith(".pdf"):
