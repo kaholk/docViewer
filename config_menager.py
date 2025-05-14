@@ -9,9 +9,9 @@ class ConfigManager:
         self.default_values = self.set_default_values()
 
         # Jeśli plik nie istnieje, ustaw domyślne wartości i zapisz konfigurację
-        if not os.path.exists(self.config_file):
-            self.apply_default_values()
-            self.save_config()
+        # if not os.path.exists(self.config_file):
+        #     self.apply_default_values()
+        #     self.save_config()
 
         self.load_config()
 
@@ -33,6 +33,9 @@ class ConfigManager:
             ("Database", "Database"): "BC_TEST",
             
             ("BC", "CompanyName"): "Dutron Global - MB",
+            ("BC", "ExtensionBaseApplication"): "437dbf0e-84ff-417a-965d-ed2bb9650972",
+            
+            ("Documentation", "Path"): "N:/21_Karol/Documentation"
         }
 
     def apply_default_values(self):

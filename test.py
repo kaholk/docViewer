@@ -1,8 +1,13 @@
 from PyQt6.QtWidgets import QApplication, QMainWindow, QSplitter, QWidget, QPushButton, QLabel, QVBoxLayout, QHBoxLayout, QScrollArea, QSizePolicy, QFrame, QLineEdit, QStyle, QStyleFactory, QProgressBar
 from PyQt6.QtCore import Qt, QTimer, QThread, pyqtSignal
+import os
+import shutil
 
 from config_menager import appConfig
+
 from databaseEngine import DbConnector
+from databaseModels import ProductionOrderLine, RecordLink
+from sqlalchemy import select
 
 class SectionWidget(QWidget):
     def __init__(self, parent=None):
@@ -109,19 +114,95 @@ class SectionWidget(QWidget):
 
 
 class DataDownloader(QThread):
-    data_signal = pyqtSignal(str)  # Sygnał do wysyłania pobranych danych
+    data_signal = pyqtSignal(dict)  # Sygnał do wysyłania pobranych danych
 
-    def __init__(self):
+    def __init__(self, orderNumber: str):
         super().__init__()
+        self.orderNumber = orderNumber
+        self.filenames = []
+        self.fileLinks = {
+            "LC": [],
+            "RYS": [],
+            "IP": [],
+            "PIJ": [],
+            "SP": [],
+            "OTHER": []
+        }
 
+    def createComponentBytesId(self, component: str, tableId: int = 27, fieldType: int = 2) -> bytearray:
+        component_bytes = bytearray()
+        component_bytes += tableId.to_bytes(length=4, byteorder='little')
+        component_bytes += fieldType.to_bytes(length=1, byteorder='little')
+        component_bytes += "{".encode(encoding='utf-8', errors='strict')
+
+        for idx, char in enumerate(component):
+            prefix = (255).to_bytes(length=1, byteorder='little') if idx == 0 else (0).to_bytes(length=1, byteorder='little')
+            component_bytes += prefix + char.encode(encoding='utf-8', errors='strict')
+
+        # Dodanie pięciu bajtów zerowych na końcu
+        component_bytes += (0).to_bytes(length=5, byteorder='little')
+
+        return component_bytes
+    
+    def dowloadDataFromDataBase(self):
+        with DbConnector() as session:
+            productionOrder = session.scalar(select(ProductionOrderLine).where(ProductionOrderLine.prodOrderNo == self.orderNumber))
+            itemId = self.createComponentBytesId(productionOrder.itemNo)
+            recordLinks = session.scalars(select(RecordLink).where( (RecordLink.recordId == itemId) & (RecordLink.type == 0) & (RecordLink.company == appConfig.get('BC', 'CompanyName')))).all()
+        
+            for recordLink in recordLinks:
+                fileName = recordLink.url1.split('/')[-1]
+                description = recordLink.description
+                
+                self.filenames.append(fileName)
+                fileLink = {
+                    "fileName": fileName,
+                    'description': description
+                }
+
+                if description.startswith("LC"):
+                    self.fileLinks["LC"].append(fileLink)
+                elif description.startswith("Rysunek"):
+                    self.fileLinks["RYS"].append(fileLink)
+                elif description.startswith("IP"):
+                    self.fileLinks["IP"].append(fileLink)
+                elif description.startswith("SP"):
+                    self.fileLinks["SP"].append(fileLink)
+                elif description.startswith("QIP"):
+                    self.fileLinks["PIJ"].append(fileLink)
+                else:
+                    self.fileLinks["OTHER"].append(fileLink)
+    
+    def copy_files_by_name(self, source_dir, destination_dir, file_names):
+        
+         # Usunięcie całego folderu docelowego
+        if os.path.exists(destination_dir):
+            shutil.rmtree(destination_dir)
+
+        # Tworzenie nowego, pustego folderu docelowego
+        os.makedirs(destination_dir)
+
+        for file_name in file_names:
+            source_path = os.path.join(source_dir, file_name)
+            destination_path = os.path.join(destination_dir, file_name)
+
+            if os.path.exists(source_path):
+                shutil.copy2(source_path, destination_path)  # Kopiuje plik z zachowaniem metadanych
+                print(f"Skopiowano: {file_name} -> {destination_dir}")
+            else:
+                print(f"Plik nie istnieje: {source_path}")
+
+    def copyDocumentationToTempFolder(self):
+        self.copy_files_by_name(appConfig.get('Documentation', 'Path'), 'TempDocumentation', self.filenames)
+    
     def run(self):
         """ Uruchamia symulację pobierania danych """
         
-        with DbConnector() as connection:
-            pass
         
+        self.dowloadDataFromDataBase()
+        self.copyDocumentationToTempFolder()
         
-        self.data_signal.emit(f'Pobrano dane')
+        self.data_signal.emit(self.fileLinks)
 
 class Popup(QFrame):
     def __init__(self, parent:QMainWindow=None):
@@ -234,7 +315,7 @@ class Popup(QFrame):
 
     def dowload_order(self):
         self.progress_bar.show()
-        self.dataDownloader = DataDownloader()
+        self.dataDownloader = DataDownloader(self.text_input.text())
         self.dataDownloader.data_signal.connect(self.download_order_resoult)
         self.dataDownloader.start()
     

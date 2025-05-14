@@ -30,7 +30,7 @@ PyBinary = str
 DbBinary448 = Unicode(length=500)
 
 PyImage = str
-DbImage = Unicode(length=500) #image
+DbImage = Unicode(length=500)
 
 PyInteger = int
 DbInteger = Integer()
@@ -46,8 +46,6 @@ DbBoolean = Boolean()
 
 PyUUID = UUID
 DbUUID = Uuid
-
-
 
 
 Language = Literal['pl', 'en']
@@ -180,80 +178,3 @@ class PyEnumPurchaseLineType(TranslatableIntegerEnum):
     FixedAsset = (4, {'en': 'Fixed Asset', 'pl': 'Środek trwały'})
     ChargeItem = (5, {'en': 'Charge (Item)', 'pl': 'Koszt dodatkowy (zapas)'})
     AllocationAccount = (10, {'en': 'Allocation Account', 'pl': 'Konto Alokacji'})
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-############ smietnik
-
-
-# TranslationWrapperValue = TypeVar("PyCustomTypeValue")  # Typ generyczny dla wartości
-# @dataclass()
-# class PyTranslationWrapper(Generic[TranslationWrapperValue]):
-#     value: TranslationWrapperValue = None
-#     translations: Translations = None
-
-#     def get_translation(self, lang: Language) -> str:
-#         """Zwraca tłumaczenie dla podanego języka."""
-#         if self.translations:
-#             return self.translations.get(lang, "brak tłumaczenia")
-#         return str(self.value)
-
-#     @property
-#     def caption(self) -> str:
-#         """Zwraca tłumaczenie dla domyślnego języka."""
-#         return self.get_translation(DEFAULT_LANGUAGE)
-    
-#     def __hash__(self):
-#         """Zwraca hash obiektu na podstawie jego wartości."""
-#         return hash((self.value, frozenset(self.translations.items()) if self.translations else None))
-
-# class DbTranslationWrapper(TypeDecorator, Generic[TranslationWrapperValue]):
-#     """
-#     Niestandardowy typ SQLAlchemy, który opakowuje wartość w PyCustomType.
-#     """
-#     impl = Unicode  # Domyślny typ bazowy (np. Unicode, Integer, itp.)
-#     cache_ok = True
-
-#     def __init__(self, db_type: TypeDecorator, translations: Language=None, *args, **kwargs):
-#         super().__init__(*args, **kwargs)
-#         self.impl = db_type
-#         self.translations = frozenset(translations.items()) if translations else frozenset()
-
-#     def process_bind_param(self, value, dialect):
-#         """
-#         Przetwarza wartość przed zapisaniem do bazy danych.
-#         """
-#         if isinstance(value, PyTranslationWrapper):
-#             return value.value  # Zapisz tylko surową wartość
-#         return value
-
-#     def process_result_value(self, value, dialect):
-#         """
-#         Przetwarza wartość po odczytaniu z bazy danych.
-#         """
-#         #  Konwertuj frozenset z powrotem na dict dla PyTranslationWrapper
-#         translations_dict = dict(self.translations)
-#         return PyTranslationWrapper(value=value, translations=translations_dict)
