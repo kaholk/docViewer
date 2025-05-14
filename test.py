@@ -1,7 +1,10 @@
 from PyQt6.QtWidgets import QApplication, QMainWindow, QSplitter, QWidget, QPushButton, QLabel, QVBoxLayout, QHBoxLayout, QScrollArea, QSizePolicy, QFrame, QLineEdit, QStyle, QStyleFactory, QProgressBar
 from PyQt6.QtCore import Qt, QTimer, QThread, pyqtSignal
+
 import os
 import shutil
+
+import qpageview.qpageview as qpageview
 
 from config_menager import appConfig
 
@@ -15,50 +18,57 @@ class SectionWidget(QWidget):
         self.init_ui()
 
     def init_ui(self):
+        
+        self.documentationFilenames = {
+            "LC": [],
+            "RYS": [],
+            "IP": [],
+            "PIJ": [],
+            "SP": [],
+            "OTHER": []
+        }
+        
         # główny layout sekcji
-        section_layout = QVBoxLayout()
-        section_layout.setContentsMargins(0, 0, 0, 0)
-        self.setLayout(section_layout)
+        self.section_layout = QVBoxLayout()
+        self.section_layout.setContentsMargins(0, 0, 0, 0)
+        self.setLayout(self.section_layout)
 
-        # Element zajmujący większość przestrzeni (dynamicznie rozszerzający się)
-        main_element = QWidget()
-        main_element.setStyleSheet("background-color: lightgray; min-height: 200px;")
-        main_element.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        # element wyswetlająÍcy pdf
+        self.fileView = qpageview.View()
+        self.fileView.kineticScrollingEnabled = False
+        self.fileView.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
 
         # ScrollArea z poziomo przewijanymi przyciskami (stała wysokość)
-        scroll_widget = QWidget()
-        scroll_area = QScrollArea()
-        scroll_area.setWidget(scroll_widget)
-        scroll_area.setWidgetResizable(True)
-        scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOn)
-        scroll_area.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        scroll_area.setFixedHeight(50)
-        scroll_area.setStyleSheet("""
+        self.scroll_widget = QWidget()
+        self.scroll_area = QScrollArea()
+        self.scroll_area.setWidget(self.scroll_widget)
+        self.scroll_area.setWidgetResizable(True)
+        self.scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOn)
+        self.scroll_area.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.scroll_area.setFixedHeight(50)
+        self.scroll_area.setStyleSheet("""
             QScrollBar:horizontal {
                 height: 20px;  /* Ustalona wysokość paska przewijania */
             }
 
         """)
-        scroll_layout = QHBoxLayout(scroll_widget)
-        scroll_layout.setContentsMargins(0, 0, 0, 0)
-        scroll_layout.setAlignment(Qt.AlignmentFlag.AlignLeft)
-        scroll_layout.setSpacing(0)
-
-        #dodanie przycisków do scrollArea
-        for i in range(10):
-            button = QPushButton(f"Przycisk {i+1}")
-            scroll_layout.addWidget(button)
+        self.scroll_layout = QHBoxLayout(self.scroll_widget)
+        self.scroll_layout.setContentsMargins(0, 0, 0, 0)
+        self.scroll_layout.setAlignment(Qt.AlignmentFlag.AlignLeft)
+        self.scroll_layout.setSpacing(0)
 
         # layout z konteneram na przyciski navigacji i akcji
-        extra_buttons_layout = QHBoxLayout()
-        extra_buttons_layout.setContentsMargins(0, 0, 0, 0)
-        extra_buttons_layout.setSpacing(0)
-        extra_buttons_layout.setAlignment(Qt.AlignmentFlag.AlignLeft)
-        extra_buttons_container = QWidget()
-        extra_buttons_container.setLayout(extra_buttons_layout)
+        self.extra_buttons_layout = QHBoxLayout()
+        self.extra_buttons_layout.setContentsMargins(0, 0, 0, 0)
+        self.extra_buttons_layout.setSpacing(0)
+        self.extra_buttons_layout.setAlignment(Qt.AlignmentFlag.AlignLeft)
+        self.extra_buttons_container = QWidget()
+        self.extra_buttons_container.setLayout(self.extra_buttons_layout)
 
-        nav_buttons = ["↑", "↻", "+", "↓", "↺", "-"]
-        action_buttons = ["LC", "IP", "SP", "RYS", "PIJ", "OTHER"]
+        self.nav_buttons_text = ["↑", "↻", "+", "↓", "↺", "-"]
+        self.nav_buttons: list[QPushButton] = []
+        self.action_buttons_text = ["LC", "IP", "SP", "RYS", "PIJ", "OTHER"]
+        self.action_buttons: list[QPushButton] = []
 
         #layout dla przycisków navigacji
         nav_layout = QVBoxLayout()
@@ -66,15 +76,16 @@ class SectionWidget(QWidget):
         nav_layout.setSpacing(0)
         
         # Tworzenie przycisków nawigacyjnych (lewa strona, dwa wiersze)
-        for i in range(0, len(nav_buttons), 3):  # Po trzy w wierszu
+        for i in range(0, len(self.nav_buttons_text), 3):  # Po trzy w wierszu
             row_layout = QHBoxLayout()
             row_layout.setContentsMargins(0, 0, 0, 0)
             row_layout.setSpacing(0)
-            for label in nav_buttons[i:i+3]:
+            for label in self.nav_buttons_text[i:i+3]:
                 button = QPushButton(label)
                 button.setFixedSize(50, 50)
                 button.setToolTip(f"Nawigacja: {label}")
                 button.clicked.connect(lambda _, l=label: self.handle_nav_action(l))
+                self.nav_buttons.append(button)
                 row_layout.addWidget(button)
             nav_layout.addLayout(row_layout)
         
@@ -84,41 +95,85 @@ class SectionWidget(QWidget):
         action_layout.setSpacing(0)
 
         # Tworzenie przycisków akcji (prawa strona, dwa wiersze)
-        for i in range(0, len(action_buttons), 3):  # Po trzy w wierszu
+        for i in range(0, len(self.action_buttons_text), 3):  # Po trzy w wierszu
             row_layout = QHBoxLayout()
             row_layout.setContentsMargins(0, 0, 0, 0)
             row_layout.setSpacing(0)
-            for label in action_buttons[i:i+3]:
+            for label in self.action_buttons_text[i:i+3]:
                 button = QPushButton(label)
                 button.setFixedSize(50, 50)
                 button.setToolTip(f"Akcja: {label}")
                 button.clicked.connect(lambda _, l=label: self.handle_action(l))
+                self.action_buttons.append(button)
                 row_layout.addWidget(button)
             action_layout.addLayout(row_layout)
 
         #dodanie przycisków nawigacji oraz akcji do layoutu z przyciskami
-        extra_buttons_layout.addLayout(nav_layout)  # Przyciski nawigacji po lewej
-        extra_buttons_layout.addLayout(action_layout)  # Przyciski akcji po prawej
+        self.extra_buttons_layout.addLayout(nav_layout)  # Przyciski nawigacji po lewej
+        self.extra_buttons_layout.addLayout(action_layout)  # Przyciski akcji po prawej
 
         #dodanie elementów do głównego widoku
-        section_layout.addWidget(main_element, 1)
-        section_layout.addWidget(scroll_area, 0)
-        section_layout.addWidget(extra_buttons_container, 0)
+        self.section_layout.addWidget(self.fileView, 1)
+        self.section_layout.addWidget(self.scroll_area, 0)
+        self.section_layout.addWidget(self.extra_buttons_container, 0)
+    
+    def set_documentation_file_names(self, documentationFilenames):
+        self.documentationFilenames = documentationFilenames
         
+        for actionn_button_idx, actionn_button_txt in enumerate(self.action_buttons_text):
+            if len(self.documentationFilenames[actionn_button_txt]) == 0:
+                self.action_buttons[actionn_button_idx].setDisabled(True)
+            else:
+                self.action_buttons[actionn_button_idx].setEnabled(True)
 
     def handle_nav_action(self, action):
-        print(f"Wykonano nawigację: {action}")
+        # "↑", "↻", "+", "↓", "↺", "-"
+        if action == "↑":
+            self.fileView.gotoNextPage()
+        elif action == "↓":
+            self.fileView.gotoPreviousPage()
+        elif action == "↻":
+            self.fileView.rotateRight()
+        elif action == "↺":
+            self.fileView.rotateLeft()
+        elif action == "+":
+            self.fileView.zoomIn()
+        elif action == "-":
+            self.fileView.zoomOut()
 
     def handle_action(self, action):
-        print(f"Wykonano akcję: {action}")
+        # usuniecie wyszystkich przycisków w scrool_layout
+        while self.scroll_layout.count():
+            item = self.scroll_layout.takeAt(0)
+            if item.widget():
+                item.widget().deleteLater()
+        
+        for documentationFile in self.documentationFilenames[action]:
+            button = QPushButton(f"{documentationFile['description']}")
+            button.setStyleSheet("padding: 5px 10px")
+            button.clicked.connect(lambda: self.loadFile(f"tempDocumentation/{documentationFile['fileName']}"))
+            self.scroll_layout.addWidget(button)
+    
+    def loadFile(self, filePath: str):
+        # Wczytanie pliku PDF lub obrazu
+        try:
+            if filePath.endswith(".pdf"):
+                self.fileView.loadPdf(filePath)
+            elif filePath.lower().endswith((".jpg", ".jpeg", ".png", ".gif")):
+                self.fileView.loadImages([filePath])
+            else:
+                raise ValueError(f"Unsupported file format: {filePath}")
+        except Exception as e:
+            print(f"Error loading file {filePath}: {e}")
 
 
 class DataDownloader(QThread):
     data_signal = pyqtSignal(dict)  # Sygnał do wysyłania pobranych danych
+    data_error = pyqtSignal(str)  # Sygnał do wysyłania błędów
 
     def __init__(self, orderNumber: str):
         super().__init__()
-        self.orderNumber = orderNumber
+        self.orderNumber = orderNumber.upper()
         self.filenames = []
         self.fileLinks = {
             "LC": [],
@@ -147,9 +202,14 @@ class DataDownloader(QThread):
     def dowloadDataFromDataBase(self):
         with DbConnector() as session:
             productionOrder = session.scalar(select(ProductionOrderLine).where(ProductionOrderLine.prodOrderNo == self.orderNumber))
+            if productionOrder is None:
+                raise Exception("Nie odnaleziono zlecenia")
             itemId = self.createComponentBytesId(productionOrder.itemNo)
+            
             recordLinks = session.scalars(select(RecordLink).where( (RecordLink.recordId == itemId) & (RecordLink.type == 0) & (RecordLink.company == appConfig.get('BC', 'CompanyName')))).all()
-        
+            if len(recordLinks) == 0:
+                raise Exception('Nie odanleziono powiązanej dokumentacji')
+            
             for recordLink in recordLinks:
                 fileName = recordLink.url1.split('/')[-1]
                 description = recordLink.description
@@ -174,37 +234,56 @@ class DataDownloader(QThread):
                     self.fileLinks["OTHER"].append(fileLink)
     
     def copy_files_by_name(self, source_dir, destination_dir, file_names):
-        
-         # Usunięcie całego folderu docelowego
-        if os.path.exists(destination_dir):
-            shutil.rmtree(destination_dir)
+        # Tworzenie folderu docelowego, jeśli nie istnieje
+        if not os.path.exists(destination_dir):
+            os.makedirs(destination_dir)
 
-        # Tworzenie nowego, pustego folderu docelowego
-        os.makedirs(destination_dir)
+        # Usunięcie tylko plików, które można usunąć
+        for file_name in os.listdir(destination_dir):
+            file_path = os.path.join(destination_dir, file_name)
+            if os.path.isfile(file_path):  # Sprawdzenie, czy to plik
+                try:
+                    os.remove(file_path)  # Próba usunięcia pliku
+                except PermissionError:
+                    # print(f"Nie można usunąć pliku: {file_path} (może być otwarty)")
+                    continue
 
+        # Kopiowanie plików z listy
         for file_name in file_names:
             source_path = os.path.join(source_dir, file_name)
             destination_path = os.path.join(destination_dir, file_name)
 
             if os.path.exists(source_path):
-                shutil.copy2(source_path, destination_path)  # Kopiuje plik z zachowaniem metadanych
-                print(f"Skopiowano: {file_name} -> {destination_dir}")
-            else:
-                print(f"Plik nie istnieje: {source_path}")
+                shutil.copy2(source_path, destination_path)
 
     def copyDocumentationToTempFolder(self):
-        self.copy_files_by_name(appConfig.get('Documentation', 'Path'), 'TempDocumentation', self.filenames)
+        self.copy_files_by_name(appConfig.get('Documentation', 'Path'), 'tempDocumentation', self.filenames)
     
     def run(self):
         """ Uruchamia symulację pobierania danych """
+        downloadError = False
         
+        # pobierz informacje o dokumentacji z bazy
+        try:
+            self.dowloadDataFromDataBase()
+        except Exception as e:
+            downloadError = True
+            self.data_error.emit(f"Bład z Bazą: {e}")
+            
+        # skopiuj dokumentacje do folderu tymczasowego
+        try:
+            self.copyDocumentationToTempFolder()
+        except Exception as e:
+            downloadError = True
+            self.data_error.emit(f'Bład podczas pobierania dokumentacji')
         
-        self.dowloadDataFromDataBase()
-        self.copyDocumentationToTempFolder()
-        
-        self.data_signal.emit(self.fileLinks)
+        # jeśli wszystko przebieglo pomyslnie zwwróć dane
+        if not downloadError:
+            self.data_signal.emit(self.fileLinks)
 
 class Popup(QFrame):
+    data_signal = pyqtSignal(dict)
+    
     def __init__(self, parent:QMainWindow=None):
         super().__init__(parent)
         
@@ -314,14 +393,22 @@ class Popup(QFrame):
         self.container_layout.addLayout(self.buttons_layout)
 
     def dowload_order(self):
+        self.error_label.setText("")
+        self.error_label.setVisible(False)
         self.progress_bar.show()
         self.dataDownloader = DataDownloader(self.text_input.text())
         self.dataDownloader.data_signal.connect(self.download_order_resoult)
+        self.dataDownloader.data_error.connect(self.download_order_error)
         self.dataDownloader.start()
     
     def download_order_resoult(self, data):
         self.progress_bar.hide()
-        print(data)
+        self.data_signal.emit(data)
+    
+    def download_order_error(self, error):
+        self.progress_bar.hide()
+        self.error_label.setText(error)
+        self.error_label.setVisible(True)
     
     def close_popup(self):
         self.hide()
@@ -336,7 +423,16 @@ class Popup(QFrame):
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-
+        
+        self.documentationFilenames = {
+            "LC": [],
+            "RYS": [],
+            "IP": [],
+            "PIJ": [],
+            "SP": [],
+            "OTHER": []
+        }
+        
         #ustawienie parametrów okna
         self.setWindowTitle("Monitory")
         self.setGeometry(appConfig.get('App', 'PositionX', int), appConfig.get('App', 'PositionY', int), appConfig.get('App', 'Width', int), appConfig.get('App', 'Height', int))
@@ -353,8 +449,9 @@ class MainWindow(QMainWindow):
         self.splitter.setContentsMargins(0, 0, 0, 0)
         
         # Dodanie sekcji do Splittera
-        self.splitter.addWidget(SectionWidget())
-        self.splitter.addWidget(SectionWidget())
+        self.sectionWidgets = [SectionWidget(), SectionWidget()]
+        for sectionWidget in self.sectionWidgets:
+            self.splitter.addWidget(sectionWidget)
 
         #kontener z layoutem dla przycisków "Pobierz zlecenie" i "Pełny ekran"
         self.buttons_container = QWidget()
@@ -379,6 +476,7 @@ class MainWindow(QMainWindow):
         
         # popup do pobierania zlecenia
         self.popup = Popup(self)
+        self.popup.data_signal.connect(self.documentationReady)
         
         # uruchom w trybie pełnoekranowym jezeli wskazuje na to konfiguracja
         if appConfig.get("App", "Fullscreen") == 'true':
@@ -392,6 +490,12 @@ class MainWindow(QMainWindow):
         if appConfig.get("App", "ShowPopUpOnStart") == 'true':
             self.popup.show()
 
+    def documentationReady(self, documentation:dict):
+        self.documentationFilenames = documentation
+        self.popup.hide()
+        for sectionWidget in self.sectionWidgets:
+            sectionWidget.set_documentation_file_names(documentation)
+        
 
     # metoda zmieniajaca tryb aplikacji pomiędzy tyrbami: pełnoekranowym a normalnym
     def toogleFullscreen(self):
