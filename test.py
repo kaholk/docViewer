@@ -1,7 +1,8 @@
-from PyQt6.QtWidgets import QApplication, QMainWindow, QSplitter, QWidget, QPushButton, QLabel, QVBoxLayout, QHBoxLayout, QScrollArea, QSizePolicy, QFrame, QTextEdit, QStyle, QStyleFactory, QProgressBar
+from PyQt6.QtWidgets import QApplication, QMainWindow, QSplitter, QWidget, QPushButton, QLabel, QVBoxLayout, QHBoxLayout, QScrollArea, QSizePolicy, QFrame, QLineEdit, QStyle, QStyleFactory, QProgressBar
 from PyQt6.QtCore import Qt, QTimer, QThread, pyqtSignal
 
 from config_menager import appConfig
+from databaseEngine import DbConnector
 
 class SectionWidget(QWidget):
     def __init__(self, parent=None):
@@ -115,26 +116,39 @@ class DataDownloader(QThread):
 
     def run(self):
         """ Uruchamia symulację pobierania danych """
+        
+        with DbConnector() as connection:
+            pass
+        
+        
         self.data_signal.emit(f'Pobrano dane')
 
 class Popup(QFrame):
     def __init__(self, parent:QMainWindow=None):
         super().__init__(parent)
+        
+        # półprzezroczyste tło popupu
         self.setStyleSheet("background-color: rgba(192, 192, 192, 150);")
-        self.hide()  # Na początku ukrywamy popup
+        
+        # popup domyślnie ukryty
+        self.hide()
 
-        # Tworzymy główny layout do wyśrodkowania zawartości
+        # layout dla głównego kontenera Qframe
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(0, 0, 0, 0)  # Usunięcie marginesów
+        layout.setContentsMargins(0, 0, 0, 0)
 
-        # Tworzymy kontener wewnątrz popupu
+        #konenener z layoutem z główna zawartościa wewnątrz popup
         self.container = QWidget()
+        self.container.setMinimumWidth(300)
         self.container.setStyleSheet("background-color: rgba(192, 192, 192, 255); border-radius: 10px; border: 1px solid gray;")
         self.container_layout = QVBoxLayout(self.container)
+        layout.addWidget(self.container, alignment=Qt.AlignmentFlag.AlignCenter)
 
-        self.text_input = QTextEdit()
+        # pole tekstowe gdzie można wprowadzić numer zlecenia
+        self.text_input = QLineEdit()
         self.text_input.setFixedHeight(40)
         self.text_input.setPlaceholderText("Wprowadź numer zlecenia")
+        self.text_input.returnPressed.connect(self.dowload_order)
         self.text_input.setStyleSheet("""
             background-color: #f0f0f0;
             border: 1px solid gray;
@@ -144,13 +158,12 @@ class Popup(QFrame):
             padding: 5px;
         """)
 
-
-        # Pole na błąd
+        # Pole na wyśwetlenie błędu, początkowo ukryte
         self.error_label = QLabel("testowy bład")
         self.error_label.setStyleSheet("color: red; font-size: 14px; border-radius: 0px")
-        # self.error_label.setVisible(False)  # Ukrywamy na start
+        self.error_label.setVisible(False) 
 
-        # Pasek ładowania
+        # Pasek ładowania, początkowo ukryte
         self.progress_bar = QProgressBar()
         self.progress_bar.setFixedHeight(20)
         self.progress_bar.setRange(0, 0)
@@ -167,25 +180,10 @@ class Popup(QFrame):
             }
         """)
 
+        # layout dla przycisków "Anuluj" i "Potwierdź"
         self.buttons_layout = QHBoxLayout()
-        self.confirm_button = QPushButton("Potwierdź")
-        self.confirm_button.clicked.connect(self.dowload_prder)
-        self.confirm_button.setStyleSheet("""
-            QPushButton {
-                background-color: #4CAF50;
-                color: white;
-                font-size: 14px;
-                border-radius: 5px;
-                border: none;
-                padding: 5px;
-            }
-            QPushButton:hover {
-                background-color: #45a049;
-            }
-            QPushButton:pressed {
-                background-color: #388E3C;
-            }
-        """)
+        
+        # przycisk "Anuluj"
         self.cancel_button = QPushButton("Anuluj")
         self.cancel_button.clicked.connect(self.close_popup)
         self.cancel_button.setStyleSheet("""
@@ -204,19 +202,37 @@ class Popup(QFrame):
                 background-color: #b71c1c;
             }
         """)
-
-        self.buttons_layout.addWidget(self.confirm_button)
         self.buttons_layout.addWidget(self.cancel_button)
+        
+        
+        # przycisk "Potwierdź"
+        self.confirm_button = QPushButton("Potwierdź")
+        self.confirm_button.clicked.connect(self.dowload_order)
+        self.confirm_button.setStyleSheet("""
+            QPushButton {
+                background-color: #4CAF50;
+                color: white;
+                font-size: 14px;
+                border-radius: 5px;
+                border: none;
+                padding: 5px;
+            }
+            QPushButton:hover {
+                background-color: #45a049;
+            }
+            QPushButton:pressed {
+                background-color: #388E3C;
+            }
+        """)
+        self.buttons_layout.addWidget(self.confirm_button)
 
+        # dodanie elementów do container_layout
         self.container_layout.addWidget(self.text_input)
         self.container_layout.addWidget(self.error_label)
         self.container_layout.addWidget(self.progress_bar)
         self.container_layout.addLayout(self.buttons_layout)
 
-        # Dodajemy kontener do layoutu, co automatycznie wyśrodkuje go
-        layout.addWidget(self.container, alignment=Qt.AlignmentFlag.AlignCenter)
-
-    def dowload_prder(self):
+    def dowload_order(self):
         self.progress_bar.show()
         self.dataDownloader = DataDownloader()
         self.dataDownloader.data_signal.connect(self.download_order_resoult)
@@ -229,7 +245,7 @@ class Popup(QFrame):
     def close_popup(self):
         self.hide()
         
-
+    # aktualizacja popup do rozmiaru rodzica nalezy uruchomić po kazdej zmianie rozmiaru okna aby wysrodkować popup
     def update_popup_size(self):
         """ Aktualizuje rozmiar popupu do pełnego rozmiaru okna głównego """
         self.setGeometry(0, 0, self.parent().width(), self.parent().height())
@@ -243,55 +259,57 @@ class MainWindow(QMainWindow):
         #ustawienie parametrów okna
         self.setWindowTitle("Monitory")
         self.setGeometry(appConfig.get('App', 'PositionX', int), appConfig.get('App', 'PositionY', int), appConfig.get('App', 'Width', int), appConfig.get('App', 'Height', int))
-        self.setGeometry(100, 100, 800, 600)
 
         #główny kontener z layoutem
-        main_widget = QWidget(self)
-        main_layout = QVBoxLayout(main_widget)
-        main_layout.setContentsMargins(0, 0, 0, 0)
-        self.setCentralWidget(main_widget)
+        self.main_widget = QWidget()
+        self.main_layout = QVBoxLayout(self.main_widget)
+        self.main_layout.setContentsMargins(0, 0, 0, 0)
+        self.setCentralWidget(self.main_widget)
 
         # QSplitter podział na lewą i prawą sekcje
-        splitter = QSplitter(Qt.Orientation.Horizontal)
-        splitter.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
-        splitter.setContentsMargins(0, 0, 0, 0)
+        self.splitter = QSplitter(Qt.Orientation.Horizontal)
+        self.splitter.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        self.splitter.setContentsMargins(0, 0, 0, 0)
         
         # Dodanie sekcji do Splittera
-        splitter.addWidget(SectionWidget())
-        splitter.addWidget(SectionWidget())
+        self.splitter.addWidget(SectionWidget())
+        self.splitter.addWidget(SectionWidget())
 
         #kontener z layoutem dla przycisków "Pobierz zlecenie" i "Pełny ekran"
-        buttons_container = QWidget()
-        buttons_layout = QHBoxLayout(buttons_container)
-        buttons_layout.setContentsMargins(0, 0, 0, 0)
+        self.buttons_container = QWidget()
+        self.buttons_layout = QHBoxLayout(self.buttons_container)
+        self.buttons_layout.setContentsMargins(0, 0, 0, 0)
 
         # Przyciski "Pobierz zlecenie"
-        get_order_button = QPushButton("Pobierz zlecenie")
-        get_order_button.setMinimumHeight(40)
-        get_order_button.clicked.connect(self.tooglePopup)
-        buttons_layout.addWidget(get_order_button, 9)
+        self.get_order_button = QPushButton("Pobierz zlecenie")
+        self.get_order_button.setMinimumHeight(40)
+        self.get_order_button.clicked.connect(self.tooglePopup)
+        self.buttons_layout.addWidget(self.get_order_button, 9)
         
         #Przycisk "Pełny ekran"
-        full_screen_button = QPushButton("Pełny ekran")
-        full_screen_button.setMinimumHeight(40)
-        full_screen_button.clicked.connect(self.toogleFullscreen)
-        buttons_layout.addWidget(full_screen_button, 1)
+        self.full_screen_button = QPushButton("Pełny ekran")
+        self.full_screen_button.setMinimumHeight(40)
+        self.full_screen_button.clicked.connect(self.toogleFullscreen)
+        self.buttons_layout.addWidget(self.full_screen_button, 1)
 
         #dodanie elementów do główego układu
-        main_layout.addWidget(splitter, 1)
-        main_layout.addWidget(buttons_container, 0)
+        self.main_layout.addWidget(self.splitter, 1)
+        self.main_layout.addWidget(self.buttons_container, 0)
         
         # popup do pobierania zlecenia
         self.popup = Popup(self)
-        self.popup.show()
-
+        
         # uruchom w trybie pełnoekranowym jezeli wskazuje na to konfiguracja
         if appConfig.get("App", "Fullscreen") == 'true':
             self.showFullScreen()
 
         # ukrycie prawego panelu jeeżeli wskazuje na to konfiguracja
         if appConfig.get("App", "SplitterSections") == '1':
-            splitter.setSizes([1, 0])
+            self.splitter.setSizes([1, 0])
+        
+        # pokazanie popup po uruchomieniu do pobierania zlecenia jeżeli wskazuje na to konfiguracja
+        if appConfig.get("App", "ShowPopUpOnStart") == 'true':
+            self.popup.show()
 
 
     # metoda zmieniajaca tryb aplikacji pomiędzy tyrbami: pełnoekranowym a normalnym

@@ -3,8 +3,8 @@ from sqlalchemy import ForeignKeyConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .baseModel import BaseModel
-from ..utils import constants
-from ..types import types
+from .constants import constants
+from .types import types
 
 
 class ProductionOrderLine(BaseModel):

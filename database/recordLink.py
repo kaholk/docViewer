@@ -1,6 +1,6 @@
 from .baseModel import BaseModel
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from ..types import types
+from .types import types
 
 
 class RecordLink(BaseModel):
