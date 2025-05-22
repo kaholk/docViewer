@@ -1,0 +1,22 @@
+# Wyklucz katalog wirtualnego środowiska
+.venv/
+
+# Wyklucz katalogi związane z budowaniem projektu
+dist/
+build/
+
+# Wyklucz pliki tymczasowe edytorów
+*.pyc
+__pycache__/
+
+# wyklucz .spec
+*.spec
+
+#wyklucz pliki tymczasowe
+~*
+
+# wykucz folder z tymczasową dokumentacją
+TempDocumentation/
+
+#wyklucz plik konfiguracyjny
+config.ini
